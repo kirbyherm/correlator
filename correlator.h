@@ -1246,7 +1246,7 @@ int DSSD::Calibrate(){
 
   double e_high_cal_thresholds_lower_bounds[2][40] = {{0}};
   double e_high_cal_thresholds_upper_bounds[2][40] = {{0}};
-  double reduce = 0;
+  double reduce = 0; // additional parameter to blanket change lower thresholds
 
   // High gain, back side, lower bound
 
@@ -1335,7 +1335,7 @@ int DSSD::Calibrate(){
   e_high_cal_thresholds_lower_bounds[1][39] = 410+reduce;//1;
 
   // High gain, back side, upper bound
-  double increase = 13000;
+  double increase = 13000; // additional parameter to blanket change upper thresholds
 
   e_high_cal_thresholds_upper_bounds[0][0]  = 2000+increase;
   e_high_cal_thresholds_upper_bounds[0][1]  = 2000+increase;
@@ -1423,15 +1423,15 @@ int DSSD::Calibrate(){
 
   // Calibrate the DSSD while applying the thresholds
   // Determine the channel, energy, and time of the strip that recieved the maximum energy deposition
-  int total_overflows = 0;
+  int total_overflows = 0; // count all low gain overflows for event
   for (int i=0; i<2; i++){ // Sides
         double totenergy = 0;
         double stripno = 0;
         int mult = 0;
         int overflow = 0;
-        int num_overflow = 0;
-        int separate_overflows=0;
-        std::vector<int> overflows = {};
+        int num_overflow = 0; // overflows on this side
+        int separate_overflows=0; // overflows that are separated on the dssd by non-overflows
+        std::vector<int> overflows = {}; // vector tracking the overflow strips
     for (int j=0; j<40; j++){ // Strips
       // Low gain
       //std::cout << "into dssd" << std::endl;
@@ -1440,6 +1440,7 @@ int DSSD::Calibrate(){
         // if e_low_raw above upper threshold set overflow
 	    e_low_cal[i][j] = 32768;
             //std::cout << e_low_cal[i][j] << std::endl;
+        // increase multiplicity of overflows
 	    m_low_cal[i] ++;
         }
         else {
@@ -1456,11 +1457,12 @@ int DSSD::Calibrate(){
           totenergy += e_low_cal[i][j];
           stripno += j*e_low_cal[i][j];
 
+          // if strip is overflow 
           if (e_low_cal[i][j] == 32768) {
             overflows.push_back(j);
             overflow += j;
             num_overflow++;
-          }
+          } //end if elowcal == 32768
 	  
           if (e_low_cal[i][j] >= e_strip_low_back){
 	    c_strip_low_back = j;
@@ -1474,10 +1476,11 @@ int DSSD::Calibrate(){
 	if (i==1){ // Low gain, front side
           //std::cout << "dssd front" << std::endl;
 	  
-	  mult+=1;
+    	  mult+=1;
           totenergy += e_low_cal[i][j];
           stripno += j*e_low_cal[i][j];
          
+          // if strip is overflow 
           if (e_low_cal[i][j] == 32768) {
             overflows.push_back(j);
             overflow += j;
@@ -1492,7 +1495,8 @@ int DSSD::Calibrate(){
         //std::cout << "calculating mid" << std::endl;
         int mid = 0; 
 //        if (overflows.size() <= 1){ 
-        if (overflows.size() <= -1){ 
+        // in its current form, the correlator takes the mid as the center of the weighted energy regardless of number of overflows
+        if (overflows.size() <= -1){
             // if <=1 overflow strip, take the c_strip with the highest energy
             if(i==0){mid = c_strip_low_back;}
             if(i==1){mid=c_strip_low_front; }
@@ -1521,8 +1525,8 @@ int DSSD::Calibrate(){
             for (int of = 1; of < overflows.size(); of++){
         if (overflows[of] - overflows[of-1] > 2){
             separate_overflows++;
-        } // end if overflows are nonsequential
             break;
+        } // end if overflows are nonsequential
             } // end for of in overflows
       } // end if last strip in side and overflows.size() > 1
   

@@ -32,9 +32,23 @@
 #include "assert.h"
 #include "./cuts.h"
 
+// script inputs:
+// 0: script self
+// 1: run number
+// 2: true or rand correlations (can use rand_n for spatially random)
+// 3: pixel correlations (1,3,5,etc.)
+// 4: single or multiple decays (sd, md)
+// 5: time correlation window (in seconds)
+// 6: back to back implant time window (0s for no restriction
+// 7: isotope for cut
+// 8: scintillator threshold
+// 9: accept implants with 2 or more low gain overflows
+// 10: accept decays with 2 or more high gain strips > 0 
 
 using namespace std;
 
+// quick function to save a png of a plot 
+//   should modify the output to a correct path
 void save_to_png( TCanvas *c1, std::string name ){
 
     TImage *img = TImage::Create();
@@ -87,6 +101,7 @@ int main(int argc, char* argv[]){
     // input to define whether to accept implants and decays with > 1 max strip (overflows)
   bool implants2 = false;  
   bool decays2 = false;  
+  // check header file IsValidImplantation/IsValidDecay for exact specifications
   if ((std::string(argv[9]) == "imp2" )){
     cout << "implants 2 true " << endl;
     implants2 = true;
@@ -525,6 +540,7 @@ int main(int argc, char* argv[]){
     NERO nero_sub_event(E_NERO_raw, t_NERO_raw);
     SCINT scint_sub_event(E_SCINT_raw, t_SCINT_raw);
     //Punchthrough, set to true or false
+    //Punchthrough not used in this version of the correlator
     Punchthrough punchthrough_event(pin_sub_event,
 				   sssd_sub_event,
 				   dssd_sub_event,
@@ -558,7 +574,7 @@ int main(int argc, char* argv[]){
        implantation_event.sssd_sub_event.Calibrate();
 
        int temp_overflows = implantation_event.dssd_sub_event.Calibrate(); // temp_overflows is the number of non sequential overflow strips in the low gain
-       if (temp_overflows > 2){
+       if (temp_overflows > 0){
 //         std::cout << temp_overflows << std::endl;
          overflow_events++;
          overflows+=temp_overflows;
@@ -583,7 +599,9 @@ int main(int argc, char* argv[]){
               
             } // end for strip b
                 } // end for side a 
-            if (ioutput_m_DSSD_low_cal[0] > 1 || ioutput_m_DSSD_low_cal[1] > 1)
+            if (ioutput_m_DSSD_low_cal[0] > 1 || ioutput_m_DSSD_low_cal[1] > 1) // if number of overflows by side more than 1, plot the energy by strip
+            // code used to plot the energy for each event by strip and side of detector
+            //   consider using the "first" bool to only plot a single event to verify output first
             {
 //              TCanvas *c1 = new TCanvas();              
 //              TGraph* front_lo = new TGraph(40,x,ioutput_E_DSSD_low_cal[1]);
@@ -693,6 +711,7 @@ int main(int argc, char* argv[]){
       int stop_strip_front  = front_upper_limit;
       int start_strip_back  = back_lower_limit ;
       int stop_strip_back   = back_upper_limit ;
+    // rand_n used to correlate decays with random implantations
 	if (string(argv[2]) == "rand_n"){
         start_strip_front = 0;
         stop_strip_front  = 39;
@@ -702,11 +721,11 @@ int main(int argc, char* argv[]){
       //create deque of all possible implanted sub-pixels
       deque<PossImplants> implantlist;
       for (int j = start_strip_front; j <= stop_strip_front; j++){ // event loop is over "i" 
-	    if (string(argv[2]) == "rand_n" && ( j >= front_lower_limit || j <= front_upper_limit ))
-          continue;
+//	    if (string(argv[2]) == "rand_n" && ( j >= front_lower_limit || j <= front_upper_limit ))
+//          continue;
 	for (int k = start_strip_back; k <= stop_strip_back; k++){
-	    if (string(argv[2]) == "rand_n" && ( k >= back_lower_limit || k <= back_upper_limit ))
-          continue;
+//	    if (string(argv[2]) == "rand_n" && ( k >= back_lower_limit || k <= back_upper_limit ))
+//          continue;
 	  if ((j >= 0) && (j <= 39) && (k >= 0) && (k<=39)){
 	    if (dssd_implantation_pixels[j][k].empty()!= true){
             if (dssd_implantation_pixels[j][k].back().IsImplanted() == true ){ 
@@ -882,7 +901,7 @@ int main(int argc, char* argv[]){
                tStripHighBack  = decay_event.dssd_sub_event.GetTStripHighBack();
                
 //            if (ioutput_m_DSSD_low_cal[0] > 1 || ioutput_m_DSSD_low_cal[1] > 1)
-            {
+/*            {
               TCanvas *c3 = new TCanvas();              
               TGraph* front_hi = new TGraph(40,x,output_E_DSSD_high_cal[1]);
               front_hi->Draw();
@@ -893,6 +912,8 @@ int main(int argc, char* argv[]){
               save_to_png(c3, Form("hi/%d_back",i));
               first = false;
             }
+*/
+
                // BCS SSSD
                
                /*for (int a = 0; a <2; a++){
