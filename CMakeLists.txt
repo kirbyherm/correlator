@@ -4,18 +4,20 @@ cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
 message(STATUS "CMAKE_MODULE_PATH: " ${CMAKE_MODULE_PATH}) 
+project(sun_correlator)
 
 # Add the executable
-add_executable(correlator200000 correlator200000.cpp)
-add_executable(bg_correlator200000 bg_correlator200000.cpp)
+add_executable(correlator_newsuncalib src/correlator_newsuncalib.cpp)
+add_executable(backcorrelator_newsuncalib src/backcorrelator_newsuncalib.cpp)
 
 
 # Required packages
 find_package(ROOT)
  
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${ROOT_INCLUDE_DIRS})
-target_link_libraries(correlator200000 ${ROOT_LIBRARIES}) 
-target_link_libraries(bg_correlator200000 ${ROOT_LIBRARIES}) 
+target_link_libraries(correlator_newsuncalib ${ROOT_LIBRARIES}) 
+target_link_libraries(backcorrelator_newsuncalib ${ROOT_LIBRARIES}) 
 
 #find_package(Boost REQUIRED system filesystem serialization)
 #include_directories(${Boost_INCLUDE_DIRS})
@@ -23,7 +25,7 @@ target_link_libraries(bg_correlator200000 ${ROOT_LIBRARIES})
 
 
 # enable warnings
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-reorder -Wno-unused-variable -Wno-unused-parameter")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 
 # enable C++11
